@@ -7,8 +7,12 @@ import (
 	"os"
 
 	"web-analyzer/handlers"
+	"web-analyzer/internal/analysis"
 	"web-analyzer/internal/analyzer"
 	"web-analyzer/internal/server"
+
+	"web-analyzer/internal/linkchecker"
+	services "web-analyzer/internal/storage"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/rs/cors"
@@ -16,12 +20,13 @@ import (
 
 func main() {
 	// Create instances of Storage and LinkChecker
-	storage := analyzer.NewStorage()         // Replace with actual implementation
-	linkChecker := analyzer.NewLinkChecker() // Replace with actual implementation
+	storage := services.NewStorage()
+	linkChecker := linkchecker.NewLinkChecker()
+	analysis := analysis.NewAnalysis() // Pass storage to analysis
 
 	// Pass the required arguments to NewAnalyzerService
-	analyzerService := analyzer.NewAnalyzerService(*storage, linkChecker) // Pass linkChecker directly
-	h := handlers.NewHandler(analyzerService)                             // Pass it to the handler
+	analyzerService := analyzer.NewAnalyzerService(*storage, linkChecker, *analysis)
+	h := handlers.NewHandler(analyzerService)
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)

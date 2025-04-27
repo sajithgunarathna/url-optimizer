@@ -1,3 +1,5 @@
+// Package handlers provides HTTP handlers for processing and managing URL analysis requests.
+// It includes functionality for analyzing URLs, retrieving submitted URLs, and checking the status of URL analyses.
 package handlers
 
 import (
@@ -7,25 +9,30 @@ import (
 
 	"web-analyzer/internal/analyzer"
 
-	services "web-analyzer/internal/storage"
-
 	"github.com/gin-gonic/gin"
 )
 
+// AnalyzeRequest represents the structure of the request body for analyzing a URL.
 type AnalyzeRequest struct {
 	URL string `json:"url"`
 }
 
+// Handler provides HTTP handlers for URL analysis operations.
+// It includes methods for analyzing URLs, retrieving submitted URLs, and checking the status of URL analyses.
 type Handler struct {
-	Analyzer analyzer.AnalyzerService
+	AnalyzerService analyzer.AnalyzerService
 }
 
-func NewHandler(analyzer analyzer.AnalyzerService) *Handler {
+// NewHandler creates a new instance of Handler with the provided AnalyzerService.
+// It is used to initialize the HTTP handlers for URL analysis operations.
+func NewHandler(analyzerService analyzer.AnalyzerService) *Handler {
 	return &Handler{
-		Analyzer: analyzer,
+		AnalyzerService: analyzerService,
 	}
 }
 
+// AnalyzeHandler handles the HTTP request for analyzing a URL.
+// It validates the request, checks the URL format, and submits the URL for analysis.
 func (h *Handler) AnalyzeHandler(c *gin.Context) {
 	var req AnalyzeRequest
 
@@ -48,7 +55,7 @@ func (h *Handler) AnalyzeHandler(c *gin.Context) {
 	}
 
 	slog.Info("URL submitted for analysis", "url", url)
-	go h.Analyzer.AnalyzePage(url)
+	go h.AnalyzerService.AnalyzePage(url)
 
 	c.JSON(http.StatusAccepted, gin.H{"message": "URL submitted for analysis"})
 }
@@ -57,27 +64,4 @@ func isValidURL(url string) bool {
 	const urlPattern = `^(https?://)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(:[0-9]{1,5})?(/.*)?$`
 	re := regexp.MustCompile(urlPattern)
 	return re.MatchString(url)
-}
-
-func (h *Handler) UrlsHandler(c *gin.Context) {
-	// Example stub logic
-	c.JSON(http.StatusOK, gin.H{"message": "List of URLs"})
-}
-
-func (h *Handler) StatusHandler(c *gin.Context) {
-	url := c.Query("url")
-	if url == "" {
-		slog.Warn("Missing URL parameter in status check")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "URL parameter is required"})
-		return
-	}
-
-	analysis, exists := services.GetAnalysis(url)
-	if !exists {
-		slog.Info("Analysis not found", "url", url)
-		c.JSON(http.StatusNotFound, gin.H{"error": "Analysis not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, analysis)
 }

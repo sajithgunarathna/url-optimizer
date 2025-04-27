@@ -4,12 +4,18 @@ import (
 	"log/slog"
 	"net/http"
 
-	services "web-analyzer/internal/storage"
+	"web-analyzer/internal/analyzer"
 
 	"github.com/gin-gonic/gin"
 )
 
-func StatusHandler(c *gin.Context) {
+type DefaultAnalyzerService struct {
+	Analyzer *analyzer.Analyzer
+}
+
+// StatusHandler handles the HTTP request for checking the status of a URL analysis.
+// It retrieves the analysis result for the specified URL and returns it in the response.
+func (h *Handler) StatusHandler(c *gin.Context) {
 	url := c.Query("url")
 	if url == "" {
 		slog.Warn("Missing URL parameter in status check")
@@ -17,7 +23,7 @@ func StatusHandler(c *gin.Context) {
 		return
 	}
 
-	analysis, exists := services.GetAnalysis(url)
+	analysis, exists := h.AnalyzerService.GetAnalysis(url)
 	if !exists {
 		slog.Info("Analysis not found", "url", url)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Analysis not found"})
